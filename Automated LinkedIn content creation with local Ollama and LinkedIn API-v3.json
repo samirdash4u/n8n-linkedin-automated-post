@@ -1,0 +1,768 @@
+{
+  "name": "Automated LinkedIn content creation with local Ollama and ComfyUI",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "d23d6eb1-8e53-484d-9d08-4de3d0d7d320",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a Content Researcher Assistant at Agentic Vibe, an AI-first automation agency helping solopreneurs, creators, and digital-first founders grow their online presence — especially on LinkedIn — through scalable, hands-free content systems.\n\nYour task is to generate high-value content topics that align with our brand pillars and resonate deeply with our audience. These topics will later be expanded into posts by another agent.\n\n🔍 What to Focus On:\nGenerate content topics (not full content) based on these strategic themes:\n\nAI for Content Creation & Workflow Automation\n\nLinkedIn Automation Tools, Tactics & Growth Strategies\n\nSolopreneur Productivity Hacks Using AI & Automation\n\nSystems Thinking for Scaling Personal Brands\n\nThe Future of Work, Creators, and Automated Influence\n\nNo-Code Tools for Content & Lead Gen Automation\n\n✅ Your Output Per Topic:\nFor each idea, generate the following:\n\nTopic Title or Core Idea (1 line)\n\nShort Rationale (1–2 sentences on why this topic matters)\n\nSuggested Angle or Hook (1 LinkedIn-style framing or contrarian take)\n\n💡 Style Guide:\nKeep ideas insightful, actionable, and future-minded\n\nFavor founder-style energy: confident, sharp, and slightly contrarian when it adds value\n\nAvoid hype or jargon — focus on clarity, systematized insight, and utility",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "id": "9cc6e338-edac-418c-9e03-abb0c8a0c98f",
+      "name": "Content topic generator2",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        352,
+        0
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[{\n \"title\": \"AI as Your First Content Hire: Why Founders Shouldn't Wait to Outsource Creation\",\n            \"rationale\": \"Most solopreneurs delay content scaling because they think hiring a ghostwriter is the next step — but AI can handle 80% with proper systems. This shifts content from a creative bottleneck to a scalable growth lever.\",\n            \"hook\": \"Ghostwriters are outdated. Train GPT once, and it ships LinkedIn gold in your voice daily. Welcome to hands-free thought leadership.\"\n          }]"
+      },
+      "id": "5ba86724-8f35-4f70-9f07-0f2ca1f71783",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        528,
+        224
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a LinkedIn content creator and copywriter. Write a LinkedIn post based on the details below.\n\nTitle: {{ $json.output[0].title }}\nRationale: {{ $json.output[0].rationale }}\nSuggested hook: {{ $json.output[0].hook }}\n\nUse the hook as the opening line. Keep the post under 1,300 characters, in short paragraphs, with a clear closing question. Do not include hashtags. Also describe a suitable image for the post. Respond with ONLY a JSON object, no markdown or code fences, using exactly these three keys: \"post title\", \"post content\", \"image description\". All three values must be plain strings.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "50908120-9584-4d45-af9c-8bd2b48d38dd",
+      "name": "Content creator",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        768,
+        0
+      ],
+      "typeVersion": 1.7,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"post title\": \"Exciting New Feature Launch 🚀\",\n  \"post content\": \"After months of collaboration, testing, and fine-tuning, we're thrilled to introduce our latest product feature: Smart Insights. It helps users uncover meaningful patterns in their data with just a few clicks. This wouldn't have been possible without our incredible team and supportive community. We're excited for what's next — and we'd love your feedback!\",\n  \"image description\": \"A laptop screen showcasing the new Smart Insights dashboard with colorful charts and graphs, surrounded by a team clapping in the background.\"\n}"
+      },
+      "id": "a7a24729-2655-4670-987c-02324943b0b7",
+      "name": "Structured Output Parser1",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        928,
+        192
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an SEO specialist for LinkedIn. Your task is to generate highly relevant and effective hashtags for the following post. Consider the post's content, target audience, and current LinkedIn trends to maximize visibility and engagement.\n\n<post_title>{{ $json.output['post title'] }}</post_title>\n<post_content>{{ $json.output['post content'] }}</post_content>\n\nPlease generate:\n1. 3-5 broad, high-volume hashtags (e.g., #AI, #Marketing, #Business)\n2. 3-5 niche-specific hashtags directly relevant to the post's core topic (e.g., #SocialMediaAutomation, #ContentCreationAI)\n3. 1-2 trending/topical hashtags if applicable (e.g., #FutureOfWork, #DigitalTransformation)\n\nReturn JSON with a single key \"hashtags\" containing an array of EXACTLY 10 different hashtag strings (no fewer), each starting with # and containing no spaces. Do not return any other keys or text.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "id": "a6ece557-d16a-44f6-beb5-13f40f2ce3c9",
+      "name": "Hashtag generator /SEO",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1264,
+        0
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"hashtags\": [\n    \"#AI\",\n    \"#Automation\",\n    \"#LinkedInGrowth\",\n    \"#ContentCreation\",\n    \"#Marketing\",\n    \"#Solopreneur\",\n    \"#NoCode\",\n    \"#PersonalBranding\",\n    \"#FutureOfWork\",\n    \"#Productivity\"\n  ]\n}",
+        "autoFix": true
+      },
+      "id": "c966d354-bccb-4d4f-a254-3fbc923e4bc5",
+      "name": "Structured Output Parser2",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1440,
+        224
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const post = $('Content creator').item.json.output;\n\n// Hashtags from the model (array, or a comma/space separated string if the model ignored the format)\nlet raw = $json.output?.hashtags ?? $json.output ?? [];\nif (typeof raw === 'string') raw = raw.split(/[,\\s]+/);\nif (!Array.isArray(raw)) raw = [];\n\nconst MIN_TAGS = 8;   // pad with defaults up to this many\nconst MAX_TAGS = 10;  // never post more than this many\nconst fallback = ['#AI', '#Automation', '#LinkedInGrowth', '#ContentCreation', '#Solopreneur',\n                  '#NoCode', '#FutureOfWork', '#PersonalBranding', '#Productivity', '#DigitalMarketing'];\n\nconst clean = t => '#' + String(t).trim().replace(/^#+/, '').replace(/[^A-Za-z0-9_]/g, '');\nconst seen = new Set();\nconst tags = [];\nconst add = t => {\n  const c = clean(t);\n  if (c.length < 3) return;\n  const k = c.toLowerCase();\n  if (seen.has(k)) return;\n  seen.add(k);\n  tags.push(c);\n};\n\nfor (const t of raw) { if (tags.length < MAX_TAGS) add(t); }\nfor (const t of fallback) { if (tags.length < MIN_TAGS) add(t); }\n\nreturn {\n  json: {\n    post_text: post['post content'] + '\\n\\n' + tags.join(' '),\n    post_title: post['post title'],\n    image_description: post['image description'],\n    hashtags: tags,\n  },\n};"
+      },
+      "id": "92d78d98-9863-416d-bf0a-85dbf5fb5763",
+      "name": "Build final post",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1632,
+        0
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "model": "gemma4:e2b",
+        "options": {
+          "numCtx": 8192
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        304,
+        208
+      ],
+      "id": "df5f9ffe-cf0c-4034-8858-0da3fb717fa1",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Aw57kYL4OZALOAXn",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "phi4-mini:latest",
+        "options": {
+          "numCtx": 8192
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        736,
+        208
+      ],
+      "id": "51f3ac9c-bb6a-438a-ac33-64704fe0f4b0",
+      "name": "Ollama Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Aw57kYL4OZALOAXn",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {
+          "numCtx": 8192
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        224
+      ],
+      "id": "a642b58b-4c0a-48b7-b3a9-73cbc466ea29",
+      "name": "Ollama Chat Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Aw57kYL4OZALOAXn",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.linkedin.com/v2/userinfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {}
+      },
+      "id": "8b100065-d4ef-454f-a08e-be8ea4d7f5a7",
+      "name": "Get LinkedIn profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1904,
+        0
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "OIOYdUNrN1SKVl3V",
+          "name": "Generic credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            },
+            {
+              "name": "LinkedIn-Version",
+              "value": "202511"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ author: 'urn:li:person:' + $('Get LinkedIn profile').first().json.sub, commentary: $('Build final post').first().json.post_text.replace(/([\\\\|{}@\\[\\]()<>*_~])/g, '\\\\$1'), visibility: 'PUBLIC', distribution: { feedDistribution: 'MAIN_FEED', targetEntities: [], thirdPartyDistributionChannels: [] }, content: { media: { id: $('Init image upload').first().json.value.image, altText: String($('Build final post').first().json.image_description || '').slice(0, 400) } }, lifecycleState: 'PUBLISHED', isReshareDisabledByAuthor: false }) }}",
+        "options": {}
+      },
+      "id": "0e41e687-a293-489a-9fdb-a216cc1ceb56",
+      "name": "Create LinkedIn post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4896,
+        0
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "OIOYdUNrN1SKVl3V",
+          "name": "Generic credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/images?action=initializeUpload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            },
+            {
+              "name": "LinkedIn-Version",
+              "value": "202511"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ initializeUploadRequest: { owner: 'urn:li:person:' + $('Get LinkedIn profile').item.json.sub } }) }}",
+        "options": {}
+      },
+      "id": "e1a2b3c4-4444-4d5e-8f60-cc0000000004",
+      "name": "Init image upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2176,
+        0
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "OIOYdUNrN1SKVl3V",
+          "name": "Generic credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Init image upload').first().json.value.uploadUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "e1a2b3c4-6666-4d5e-8f60-cc0000000006",
+      "name": "Upload image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4624,
+        0
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "OIOYdUNrN1SKVl3V",
+          "name": "Generic credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://comfyui:8188/object_info/CheckpointLoaderSimple",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f1000000-0001-4a00-8000-aa0000000001",
+      "name": "Get ComfyUI checkpoints",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// --- settings you may want to change ---\nconst CHECKPOINT = '';   // e.g. 'sd_xl_base_1.0.safetensors'. Empty = first checkpoint ComfyUI has installed\nconst WIDTH = 768, HEIGHT = 400;   // multiples of 8. Use 1024 x 536 for SDXL models\nconst STEPS = 20, CFG = 7;\n// ---------------------------------------\n\nconst info = $json.CheckpointLoaderSimple?.input?.required?.ckpt_name;\nconst installed = Array.isArray(info?.[0]) ? info[0] : (info?.[1]?.options ?? []);\nconst ckpt = CHECKPOINT || installed[0];\nif (!ckpt) throw new Error('No checkpoint found in ComfyUI. Put a .safetensors model in ComfyUI/models/checkpoints and restart/refresh ComfyUI.');\n\nconst b = $('Build final post').first().json;\nconst subject = String(b.image_description || b.post_title).slice(0, 400);\n\nreturn {\n  json: {\n    checkpoint: ckpt,\n    body: {\n      prompt: {\n        '3': { class_type: 'KSampler', inputs: {\n          seed: Math.floor(Math.random() * 1e12), steps: STEPS, cfg: CFG,\n          sampler_name: 'euler', scheduler: 'normal', denoise: 1,\n          model: ['4', 0], positive: ['6', 0], negative: ['7', 0], latent_image: ['5', 0] } },\n        '4': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: ckpt } },\n        '5': { class_type: 'EmptyLatentImage', inputs: { width: WIDTH, height: HEIGHT, batch_size: 1 } },\n        '6': { class_type: 'CLIPTextEncode', inputs: {\n          text: subject + ', clean modern professional illustration for a LinkedIn post, high quality, no text',\n          clip: ['4', 1] } },\n        '7': { class_type: 'CLIPTextEncode', inputs: {\n          text: 'text, words, letters, watermark, logo, blurry, low quality, distorted, deformed',\n          clip: ['4', 1] } },\n        '8': { class_type: 'VAEDecode', inputs: { samples: ['3', 0], vae: ['4', 2] } },\n        '9': { class_type: 'SaveImage', inputs: { filename_prefix: 'n8n_linkedin', images: ['8', 0] } },\n      },\n    },\n  },\n};"
+      },
+      "id": "f1000000-0002-4a00-8000-aa0000000002",
+      "name": "Build ComfyUI request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://comfyui:8188/prompt",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "f1000000-0003-4a00-8000-aa0000000003",
+      "name": "Queue ComfyUI image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2992,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 8,
+        "unit": "seconds"
+      },
+      "id": "f1000000-0004-4a00-8000-aa0000000004",
+      "name": "Wait for ComfyUI",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3264,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://comfyui:8188/history/' + $('Queue ComfyUI image').first().json.prompt_id }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f1000000-0005-4a00-8000-aa0000000005",
+      "name": "Get ComfyUI result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3536,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const MAX_POLLS = 90;   // 90 x 8s = 12 minutes before giving up\n\nconst id = $('Queue ComfyUI image').first().json.prompt_id;\nconst h = $input.first().json[id];\n\nif (h?.status?.status_str === 'error') {\n  throw new Error('ComfyUI reported an error while generating the image. Check the ComfyUI container logs.');\n}\n\nconst images = Object.values(h?.outputs ?? {}).flatMap(o => o.images ?? []);\nif (images.length) return { json: { done: true, image: images[0] } };\n\nif ($runIndex >= MAX_POLLS) {\n  throw new Error('Timed out waiting for ComfyUI. Check the ComfyUI container (queue, memory, model loading).');\n}\nreturn { json: { done: false } };"
+      },
+      "id": "f1000000-0006-4a00-8000-aa0000000006",
+      "name": "Check ComfyUI result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3808,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0ffee00-0007-4a00-8000-bb0000000007",
+              "leftValue": "={{ $json.done }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f1000000-0007-4a00-8000-aa0000000007",
+      "name": "Image ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://comfyui:8188/view",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filename",
+              "value": "={{ $json.image.filename }}"
+            },
+            {
+              "name": "subfolder",
+              "value": "={{ $json.image.subfolder }}"
+            },
+            {
+              "name": "type",
+              "value": "={{ $json.image.type }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "f1000000-0008-4a00-8000-aa0000000008",
+      "name": "Download image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4352,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Content topic generator2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content topic generator2": {
+      "main": [
+        [
+          {
+            "node": "Content creator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content creator": {
+      "main": [
+        [
+          {
+            "node": "Hashtag generator /SEO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hashtag generator /SEO": {
+      "main": [
+        [
+          {
+            "node": "Build final post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build final post": {
+      "main": [
+        [
+          {
+            "node": "Get LinkedIn profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Content topic generator2",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Content creator",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Hashtag generator /SEO",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content topic generator2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content creator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Hashtag generator /SEO",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get LinkedIn profile": {
+      "main": [
+        [
+          {
+            "node": "Init image upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init image upload": {
+      "main": [
+        [
+          {
+            "node": "Get ComfyUI checkpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image": {
+      "main": [
+        [
+          {
+            "node": "Create LinkedIn post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get ComfyUI checkpoints": {
+      "main": [
+        [
+          {
+            "node": "Build ComfyUI request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build ComfyUI request": {
+      "main": [
+        [
+          {
+            "node": "Queue ComfyUI image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue ComfyUI image": {
+      "main": [
+        [
+          {
+            "node": "Wait for ComfyUI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for ComfyUI": {
+      "main": [
+        [
+          {
+            "node": "Get ComfyUI result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get ComfyUI result": {
+      "main": [
+        [
+          {
+            "node": "Check ComfyUI result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check ComfyUI result": {
+      "main": [
+        [
+          {
+            "node": "Image ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image ready?": {
+      "main": [
+        [
+          {
+            "node": "Download image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for ComfyUI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download image": {
+      "main": [
+        [
+          {
+            "node": "Upload image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d5f2b8a0-3c71-4e9a-8b46-1a7e9c2d4f06",
+  "meta": {
+    "instanceId": "cd464888e9747222a43ac1bd7ee285c901e7b16eec5d3b87368702ab9f86f321"
+  },
+  "nodeGroups": [],
+  "id": "3o2ChbPiWRBQDLN5",
+  "tags": []
+}
