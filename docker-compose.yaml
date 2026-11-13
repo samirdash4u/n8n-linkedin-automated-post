@@ -1,0 +1,181 @@
+services:
+  comfyui:
+    image: ghcr.io/ai-dock/comfyui:cpu-22.04
+    container_name: comfyui
+    ports:
+      - "8188:8188"
+      - "0.0.0.0:18188:18188"
+    environment:
+      WEB_ENABLE_AUTH: false
+      CF_QUICK_TUNNELS: false
+      COMFYUI_ARGS: "--cpu"
+    volumes:
+      - ./comfy/workspace:/workspace
+      - ./comfy/models/checkpoints:/opt/ComfyUI/models/checkpoints
+      - ./comfy/output:/opt/ComfyUI/output
+      - ./comfy/supervisor-comfyui.sh:/opt/ai-dock/bin/supervisor-comfyui.sh:ro
+    restart: unless-stopped
+    networks:
+      - automation
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:5678:5678"
+    environment:
+      TZ: ${TZ:-Asia/Kolkata}
+      GENERIC_TIMEZONE: ${TZ:-Asia/Kolkata}
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env}
+      N8N_RUNNERS_ENABLED: "true"
+      N8N_RUNNERS_MODE: external
+      N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:?Set N8N_RUNNERS_AUTH_TOKEN in .env}
+      N8N_RUNNERS_BROKER_LISTEN_ADDRESS: 0.0.0.0
+      N8N_SECURE_COOKIE: false
+      OLLAMA_HOST: http://ollama:11434
+      N8N_LOG_LEVEL: info
+      N8N_EDITOR_BASE_URL: http://<hostip>:5678
+      WEBHOOK_URL: http://<hostip>:5678/
+    volumes:
+      - ./n8n:/home/node/.n8n
+    depends_on:
+      ollama:
+        condition: service_healthy
+      n8n-runners:
+        condition: service_started
+      sandbox-api:
+        condition: service_healthy
+    networks:
+      - automation
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    volumes:
+      - ./ollama:/root/.ollama
+    networks:
+      - automation
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  n8n-runners:
+    image: n8nio/runners:latest
+    container_name: n8n-runners
+    restart: unless-stopped
+    environment:
+      N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:?Set N8N_RUNNERS_AUTH_TOKEN in .env}
+      N8N_RUNNERS_TASK_BROKER_URI: http://n8n:5679
+      N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT: 15
+      N8N_EDITOR_BASE_URL: http://<hostip>:5678
+      WEBHOOK_URL: http://<hostip>:5678/
+    networks:
+      - automation
+
+  searchbox:
+    image: searxng/searxng:latest
+    container_name: searchbox
+    restart: unless-stopped
+    environment:
+      SEARXNG_SECRET: lx17frw4d918IvJVppVuIA
+    ports:
+      - "0.0.0.0:8080:8080"
+    volumes:
+      - ./searxng:/etc/searxng
+    networks:
+      - automation
+
+
+  sandbox-certs:
+    image: n8nio/n8n-sandbox-service-api:1.9.0
+    container_name: sandbox-certs
+    env_file: .env
+    restart: "no"
+    user: "0:0"
+    entrypoint: ["sh", "-c"]
+    command:
+      - >
+        bootstrap-mtls.sh --out-dir /tls
+        --api-san sandbox-api
+        --control-san-prefix sandbox-runner
+        --world-readable &&
+        chown -R sandbox-api:sandbox-api /tls/api &&
+        chmod -R a+rX /tls
+    environment:
+      NUM_RUNNERS: "1"
+    volumes:
+      - ./sandboxtls:/tls
+
+  sandbox-api:
+    image: n8nio/n8n-sandbox-service-api:1.9.0
+    depends_on:
+      sandbox-certs:
+        condition: service_completed_successfully
+    env_file: .env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    environment:
+      SANDBOX_API_GRPC_TLS_CERT_FILE: /tls/api/grpc-server.crt
+      SANDBOX_API_GRPC_TLS_KEY_FILE: /tls/api/grpc-server.key
+      SANDBOX_API_GRPC_TLS_CLIENT_CA_FILE: /tls/api/ca.crt
+      SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_CA_FILE: /tls/api/ca.crt
+      SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_CERT_FILE: /tls/api/control-grpc-api-client.crt
+      SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_KEY_FILE: /tls/api/control-grpc-api-client.key
+      SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_SERVER_NAME: sandbox-runner-1
+    ports:
+      - "0.0.0.0:8081:8080"
+      - "0.0.0.0:9090:9090"
+    networks:
+      - automation
+    volumes:
+      - ./sandboxtls:/tls:ro
+
+  sandbox-runner-1:
+    image: n8nio/n8n-sandbox-service-runner-dind:1.9.0
+    privileged: true
+    depends_on:
+      sandbox-api:
+        condition: service_healthy
+    env_file: .env
+    networks:
+      - automation
+    environment:
+      SANDBOX_RUNNER_API_GRPC_ADDR: sandbox-api:9090
+      SANDBOX_RUNNER_DOCKER_SANDBOX_IMAGE: n8nio/n8n-sandbox-service-sandbox:1.9.0
+      SANDBOX_RUNNER_DOCKER_ACK_BR_NETFILTER_IS_LOADED: "true"
+      DOCKER_IGNORE_BR_NETFILTER_ERROR: 1
+      SANDBOX_RUNNER_HTTP_BASE_URL: https://sandbox-runner-1:8080
+      SANDBOX_RUNNER_CONTROL_GRPC_LISTEN_ADDR: ':9091'
+      SANDBOX_RUNNER_CONTROL_GRPC_ADVERTISE_ADDR: sandbox-runner-1:9091
+      SANDBOX_RUNNER_ID: runner-1
+      SANDBOX_RUNNER_REGISTRATION_GRPC_CA_FILE: /tls/runner/ca.crt
+      SANDBOX_RUNNER_REGISTRATION_GRPC_CERT_FILE: /tls/runner/grpc-client.crt
+      SANDBOX_RUNNER_REGISTRATION_GRPC_KEY_FILE: /tls/runner/grpc-client.key
+      SANDBOX_RUNNER_REGISTRATION_GRPC_SERVER_NAME: sandbox-api
+      SANDBOX_RUNNER_CONTROL_GRPC_TLS_CERT_FILE: /tls/runner/control-grpc-server.crt
+      SANDBOX_RUNNER_CONTROL_GRPC_TLS_KEY_FILE: /tls/runner/control-grpc-server.key
+      SANDBOX_RUNNER_CONTROL_GRPC_TLS_CLIENT_CA_FILE: /tls/runner/ca.crt
+    volumes:
+      - ./sandboxtls:/tls:ro
+
+networks:
+  automation:
+    driver: bridge
