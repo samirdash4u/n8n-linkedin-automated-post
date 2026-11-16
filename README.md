@@ -454,11 +454,11 @@ Prereqs
 2. docker should be up and running
 
 Deployment
-1. Modify docker-compose.yml and add host ip in given placeholder <hostio>
-2. Run pre-setup.sh script to create required folder structure
-3. Start docker compose using `docker compose up -d`
-4. Once all the containers are up then run post-setup.sh to download required modules.
-5. Access n8n from browser.
-6. import the workflow.json
-7. create requird credentials.
-8. Execute the workflow to see the magic.
+1. Run `./scripts/pre-setup.sh`. It checks the host, creates the folders and creates `.env` with generated secrets.
+2. Edit `.env` and set `N8N_HOST` and `N8N_PUBLIC_URL`, then run `./scripts/pre-setup.sh` again to validate.
+3. Start the stack with `docker compose up -d` (add `--profile search` or `--profile sandbox` for the optional services).
+4. Once the containers are up, run `./scripts/post-setup.sh` to download the models and run the health check.
+5. Access n8n from the browser at `N8N_PUBLIC_URL`.
+6. Import the workflow JSON.
+7. Create the required credentials (Ollama and LinkedIn OAuth2).
+8. Execute the workflow.

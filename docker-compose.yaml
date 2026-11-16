@@ -2,9 +2,10 @@ services:
   comfyui:
     image: ghcr.io/ai-dock/comfyui:cpu-22.04
     container_name: comfyui
+    # Only n8n needs ComfyUI, over the Docker network (http://comfyui:8188).
+    # The UI is published on localhost only; use an SSH tunnel to view it remotely.
     ports:
-      - "8188:8188"
-      - "0.0.0.0:18188:18188"
+      - "127.0.0.1:8188:8188"
     environment:
       WEB_ENABLE_AUTH: false
       CF_QUICK_TUNNELS: false
@@ -19,7 +20,7 @@ services:
       - automation
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.45.4}
     container_name: n8n
     restart: unless-stopped
     ports:
@@ -38,17 +39,17 @@ services:
       N8N_SECURE_COOKIE: false
       OLLAMA_HOST: http://ollama:11434
       N8N_LOG_LEVEL: info
-      N8N_EDITOR_BASE_URL: http://<hostip>:5678
-      WEBHOOK_URL: http://<hostip>:5678/
+      N8N_EDITOR_BASE_URL: ${N8N_PUBLIC_URL:?Set N8N_PUBLIC_URL in .env}
+      WEBHOOK_URL: ${N8N_PUBLIC_URL:?Set N8N_PUBLIC_URL in .env}/
     volumes:
       - ./n8n:/home/node/.n8n
+    # The sandbox is optional (profile "sandbox") and is not a dependency:
+    # n8n must start even when the sandbox is not running.
     depends_on:
       ollama:
         condition: service_healthy
       n8n-runners:
         condition: service_started
-      sandbox-api:
-        condition: service_healthy
     networks:
       - automation
     healthcheck:
@@ -59,7 +60,7 @@ services:
       start_period: 60s
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
     container_name: ollama
     restart: unless-stopped
     volumes:
@@ -74,35 +75,38 @@ services:
       start_period: 30s
 
   n8n-runners:
-    image: n8nio/runners:latest
+    image: n8nio/runners:${N8N_VERSION:-2.45.4}
     container_name: n8n-runners
     restart: unless-stopped
     environment:
       N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:?Set N8N_RUNNERS_AUTH_TOKEN in .env}
       N8N_RUNNERS_TASK_BROKER_URI: http://n8n:5679
       N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT: 15
-      N8N_EDITOR_BASE_URL: http://<hostip>:5678
-      WEBHOOK_URL: http://<hostip>:5678/
     networks:
       - automation
 
+  # Optional: docker compose --profile search up -d
   searchbox:
-    image: searxng/searxng:latest
+    image: searxng/searxng:${SEARXNG_VERSION:-latest}
     container_name: searchbox
+    profiles: ["search"]
     restart: unless-stopped
     environment:
-      SEARXNG_SECRET: lx17frw4d918IvJVppVuIA
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?Set SEARXNG_SECRET in .env}
     ports:
-      - "0.0.0.0:8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./searxng:/etc/searxng
     networks:
       - automation
 
 
+  # Optional n8n code sandbox (not used by the LinkedIn workflow):
+  # docker compose --profile sandbox up -d
   sandbox-certs:
     image: n8nio/n8n-sandbox-service-api:1.9.0
     container_name: sandbox-certs
+    profiles: ["sandbox"]
     env_file: .env
     restart: "no"
     user: "0:0"
@@ -122,6 +126,7 @@ services:
 
   sandbox-api:
     image: n8nio/n8n-sandbox-service-api:1.9.0
+    profiles: ["sandbox"]
     depends_on:
       sandbox-certs:
         condition: service_completed_successfully
@@ -140,9 +145,7 @@ services:
       SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_CERT_FILE: /tls/api/control-grpc-api-client.crt
       SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_KEY_FILE: /tls/api/control-grpc-api-client.key
       SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_SERVER_NAME: sandbox-runner-1
-    ports:
-      - "0.0.0.0:8081:8080"
-      - "0.0.0.0:9090:9090"
+    # No published ports: n8n and the runner reach the API over the Docker network.
     networks:
       - automation
     volumes:
@@ -150,6 +153,7 @@ services:
 
   sandbox-runner-1:
     image: n8nio/n8n-sandbox-service-runner-dind:1.9.0
+    profiles: ["sandbox"]
     privileged: true
     depends_on:
       sandbox-api:
