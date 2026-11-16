@@ -65,6 +65,7 @@ The first must list every model the workflow uses; the second must list a `.safe
 | `ECONNREFUSED` or timeout on `comfyui:8188` | ComfyUI still starting (first boot installs packages) | `docker compose logs -f comfyui` and wait for "Starting ComfyUI" |
 | `Timed out waiting for ComfyUI` after 12 minutes | CPU too slow or the queue is stuck | Open `http://127.0.0.1:8188` on the server (or via SSH tunnel) and check the queue; lower `STEPS` or size; raise `MAX_POLLS` |
 | `ComfyUI reported an error` | Bad checkpoint or out of memory | `docker compose logs --tail=200 comfyui` |
+| `No image binary found on "Download image"` | ComfyUI returned no file | Check `Download image` output and the file in `comfy/output/` |
 
 ## LinkedIn API
 
@@ -76,10 +77,11 @@ The first must list every model the workflow uses; the second must list a `.safe
 | LinkedIn rejects the `http://` redirect URL | Non-localhost HTTP redirect | Use an SSH tunnel and `http://localhost:5678`, or HTTPS ([pre-install.md](pre-install.md#2-decide-the-public-url)) |
 | `401` on `Get LinkedIn profile` or later nodes | Token expired (60 days) or `openid profile` missing | Reconnect the credential |
 | `403 ACCESS_DENIED` on `/rest/images` or `/rest/posts` | `w_member_social` scope missing | Add the scope, reconnect |
-| `426` or `NONEXISTENT_VERSION` | `LinkedIn-Version` header retired | Set a recent `YYYYMM` in `Init image upload` and `Create LinkedIn post` |
+| `426` or `NONEXISTENT_VERSION` | `LinkedIn-Version` header retired | Set a recent `YYYYMM` in `linkedinVersion` in the `Config` node |
 | `422` on `Create LinkedIn post` | Text over 3,000 characters, or unescaped reserved characters | Check `post_text` length; keep the escape regex in the node body |
-| `Upload image` fails, or post fails with a media error | Upload URL stale or image still processing | Re-run. On slow hardware the upload URL can go stale while the image renders; initialise the upload after the image is ready |
+| `Upload image` fails, or post fails with a media error | Upload URL stale or image still processing | Re-run. The upload is initialised only after the image is ready, so a repeat failure usually means a network or token problem; check the node's response body |
 | `429` | Rate limit | Post less often |
+| Same post published twice | A manual re-run after a timeout on `Create LinkedIn post` | Check your profile before re-running; that node is deliberately not retried |
 
 ## Before asking for help
 

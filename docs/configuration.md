@@ -6,6 +6,18 @@ The topic agent (`Content topic generator`) carries the brand prompt: who you ar
 
 The post style (length under 1,300 characters, closing question, no hashtags in the body) is set in `Content creator`.
 
+## Config node
+
+The `Config` node right after the trigger holds settings used by several nodes:
+
+| Field | Default | Used by |
+| --- | --- | --- |
+| `linkedinVersion` | `202610` | `LinkedIn-Version` header on `Init image upload` and `Create LinkedIn post` |
+
+## Retries
+
+The three LLM nodes, `Download image` and the LinkedIn profile and upload nodes retry up to 3 times, 5 seconds apart. `Create LinkedIn post` does not retry, so a timeout can never publish the same post twice.
+
 ## Schedule
 
 `Schedule Trigger` -> interval. Default every 6 hours.

@@ -19,7 +19,7 @@ All lines should show `[PASS]`. If not, see [troubleshooting.md](troubleshooting
 2. **Import:** Workflows -> Import from file -> `workflows/linkedin-autopost.json`.
 3. **Ollama credential:** Credentials -> Add credential -> Ollama. Base URL `http://ollama:11434` (not `localhost`). Open `Ollama Chat Model`, `Ollama Model` and `Ollama Chat Model1` and select it.
 4. **LinkedIn credential:** create the OAuth2 API credential as in [linkedin-app-setup.md](linkedin-app-setup.md#4-create-the-credential-in-n8n). Select it in `Get LinkedIn profile`, `Init image upload`, `Upload image` and `Create LinkedIn post`.
-5. Check the `LinkedIn-Version` header in `Init image upload` and `Create LinkedIn post` is a recent `YYYYMM`.
+5. Open the `Config` node and check `linkedinVersion` is a recent `YYYYMM` LinkedIn API version.
 6. Edit the topic prompt in `Content topic generator` for your own brand ([configuration.md](configuration.md)).
 
 ## 3. Smoke test without posting

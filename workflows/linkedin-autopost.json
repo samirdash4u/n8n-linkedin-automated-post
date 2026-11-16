@@ -16,7 +16,7 @@
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "position": [
-        0,
+        -224,
         0
       ],
       "typeVersion": 1.2
@@ -35,7 +35,10 @@
         352,
         0
       ],
-      "typeVersion": 2
+      "typeVersion": 2,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -67,7 +70,7 @@
       "typeVersion": 1.7,
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 2000
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -96,7 +99,10 @@
         1264,
         0
       ],
-      "typeVersion": 2
+      "typeVersion": 2,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -204,7 +210,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1904,
+        4080,
         0
       ],
       "credentials": {
@@ -212,7 +218,10 @@
           "id": "OIOYdUNrN1SKVl3V",
           "name": "Generic credential"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -229,7 +238,7 @@
             },
             {
               "name": "LinkedIn-Version",
-              "value": "202511"
+              "value": "={{ $('Config').first().json.linkedinVersion }}"
             },
             {
               "name": "Content-Type",
@@ -247,7 +256,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4896,
+        5168,
         0
       ],
       "credentials": {
@@ -272,7 +281,7 @@
             },
             {
               "name": "LinkedIn-Version",
-              "value": "202511"
+              "value": "={{ $('Config').first().json.linkedinVersion }}"
             },
             {
               "name": "Content-Type",
@@ -290,7 +299,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2176,
+        4352,
         0
       ],
       "credentials": {
@@ -298,7 +307,10 @@
           "id": "OIOYdUNrN1SKVl3V",
           "name": "Generic credential"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -318,7 +330,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4624,
+        4896,
         0
       ],
       "credentials": {
@@ -326,7 +338,10 @@
           "id": "OIOYdUNrN1SKVl3V",
           "name": "Generic credential"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -340,7 +355,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2448,
+        1904,
         0
       ]
     },
@@ -354,7 +369,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2720,
+        2176,
         0
       ]
     },
@@ -374,7 +389,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2992,
+        2448,
         0
       ]
     },
@@ -388,7 +403,7 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        3264,
+        2720,
         0
       ]
     },
@@ -404,7 +419,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3536,
+        2992,
         0
       ]
     },
@@ -418,7 +433,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3808,
+        3264,
         0
       ]
     },
@@ -452,7 +467,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        4080,
+        3536,
         0
       ]
     },
@@ -491,9 +506,114 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4352,
+        3808,
         0
-      ]
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-0001-linkedin-version",
+              "name": "linkedinVersion",
+              "value": "202610",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        0
+      ],
+      "id": "c0f19000-0001-4a00-8000-dd0000000001",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Pass the image downloaded from ComfyUI on to the LinkedIn upload.\n// HTTP nodes replace their input, so the binary is re-attached here.\nconst img = $('Download image').first();\nif (!img.binary?.data) throw new Error('No image binary found on \"Download image\".');\nreturn [{ json: { uploadUrl: $json.value.uploadUrl, image: $json.value.image }, binary: img.binary }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4624,
+        0
+      ],
+      "id": "c0f19000-0002-4a00-8000-dd0000000002",
+      "name": "Attach image"
+    },
+    {
+      "parameters": {
+        "content": "## Setup\nEvery 6 hours by default.\n\n**Config** holds `linkedinVersion` (LinkedIn-Version header, `YYYYMM`). Update it when LinkedIn retires the version (HTTP 426).",
+        "width": 560,
+        "height": 256,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -288
+      ],
+      "id": "c0f19000-0101-4a00-8000-ee0000000001",
+      "name": "Note: setup"
+    },
+    {
+      "parameters": {
+        "content": "## 1. Write the post (Ollama)\nTopic ideas -> post + image brief -> hashtags.\nEdit the brand prompt in **Content topic generator**. Models: see docs/configuration.md.",
+        "width": 1600,
+        "height": 256,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -288
+      ],
+      "id": "c0f19000-0102-4a00-8000-ee0000000002",
+      "name": "Note: text"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Render the image (ComfyUI)\nSize, steps and checkpoint: constants at the top of **Build ComfyUI request**. Polls every 8 s, gives up after 12 min (MAX_POLLS).",
+        "width": 2200,
+        "height": 256,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1904,
+        -288
+      ],
+      "id": "c0f19000-0103-4a00-8000-ee0000000003",
+      "name": "Note: image"
+    },
+    {
+      "parameters": {
+        "content": "## 3. Publish (LinkedIn API)\nAll four HTTP nodes use the LinkedIn OAuth2 credential (scopes `openid profile w_member_social`). Token expires after 60 days: reconnect it.\n**Create LinkedIn post** is not retried, to avoid duplicates.",
+        "width": 1312,
+        "height": 256,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4176,
+        -288
+      ],
+      "id": "c0f19000-0104-4a00-8000-ee0000000004",
+      "name": "Note: linkedin"
     }
   ],
   "pinData": {},
@@ -502,7 +622,7 @@
       "main": [
         [
           {
-            "node": "Content topic generator",
+            "node": "Config",
             "type": "main",
             "index": 0
           }
@@ -535,7 +655,7 @@
       "main": [
         [
           {
-            "node": "Get LinkedIn profile",
+            "node": "Get ComfyUI checkpoints",
             "type": "main",
             "index": 0
           }
@@ -628,7 +748,7 @@
       "main": [
         [
           {
-            "node": "Get ComfyUI checkpoints",
+            "node": "Attach image",
             "type": "main",
             "index": 0
           }
@@ -734,7 +854,7 @@
       "main": [
         [
           {
-            "node": "Upload image",
+            "node": "Get LinkedIn profile",
             "type": "main",
             "index": 0
           }
@@ -746,6 +866,28 @@
         [
           {
             "node": "Content creator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Content topic generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach image": {
+      "main": [
+        [
+          {
+            "node": "Upload image",
             "type": "main",
             "index": 0
           }
