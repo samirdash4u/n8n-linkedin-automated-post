@@ -1,5 +1,5 @@
 {
-  "name": "Automated LinkedIn content creation with local Ollama and ComfyUI",
+  "name": "Automated LinkedIn post with local Ollama and ComfyUI",
   "nodes": [
     {
       "parameters": {
@@ -29,7 +29,7 @@
         "options": {}
       },
       "id": "9cc6e338-edac-418c-9e03-abb0c8a0c98f",
-      "name": "Content topic generator2",
+      "name": "Content topic generator",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "position": [
         352,
@@ -502,18 +502,7 @@
       "main": [
         [
           {
-            "node": "Content topic generator2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Content topic generator2": {
-      "main": [
-        [
-          {
-            "node": "Content creator",
+            "node": "Content topic generator",
             "type": "main",
             "index": 0
           }
@@ -557,7 +546,7 @@
       "ai_outputParser": [
         [
           {
-            "node": "Content topic generator2",
+            "node": "Content topic generator",
             "type": "ai_outputParser",
             "index": 0
           }
@@ -590,7 +579,7 @@
       "ai_languageModel": [
         [
           {
-            "node": "Content topic generator2",
+            "node": "Content topic generator",
             "type": "ai_languageModel",
             "index": 0
           }
@@ -746,6 +735,17 @@
         [
           {
             "node": "Upload image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content topic generator": {
+      "main": [
+        [
+          {
+            "node": "Content creator",
             "type": "main",
             "index": 0
           }
