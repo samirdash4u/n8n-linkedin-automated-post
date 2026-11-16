@@ -1,0 +1,16 @@
+# Secrets
+.env
+
+# Runtime data created by the containers
+n8n/
+ollama/
+searxng/
+sandboxtls/
+comfy/workspace/
+comfy/models/
+comfy/output/
+
+# Logs and partial downloads
+*.log
+*.part
+debug-logs.txt
