@@ -49,4 +49,4 @@ LinkedIn access tokens last 60 days, and apps on the self-serve products normall
 
 ## 6. API version header
 
-`Init image upload` and `Create LinkedIn post` send `LinkedIn-Version: YYYYMM`. LinkedIn supports each version for about a year. When posts start failing with `426` or `NONEXISTENT_VERSION`, set both nodes to a recent month (see the [LinkedIn API versioning page](https://learn.microsoft.com/en-us/linkedin/marketing/versioning)).
+`Init image upload` and `Create LinkedIn post` send a `LinkedIn-Version: YYYYMM` header, taken from `linkedinVersion` in the `Config` node. LinkedIn supports each version for about a year. When posts start failing with `426` or `NONEXISTENT_VERSION`, set it to a recent month (see the [LinkedIn API versioning page](https://learn.microsoft.com/en-us/linkedin/marketing/versioning)).
